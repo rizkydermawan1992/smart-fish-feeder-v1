@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width,initial-scale=1.0" />
+
+		<title>Smart Fish Feeder</title>
+
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script src="https://unpkg.com/lucide@latest"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+		<style>
+			body {
+				background: linear-gradient(135deg, #b5e0edfe, #f0fdfa);
+			}
+
+			/* Glass UI */
+			.glass {
+				background: rgba(255, 255, 255, 0.65);
+				backdrop-filter: blur(12px);
+			}
+
+			/* FIX ICON ALIGNMENT */
+			svg {
+				display: inline-block;
+				vertical-align: middle;
+			}
+
+			/* BUTTON STYLE */
+			.btn {
+				width: 100%;
+				padding: 12px;
+				border-radius: 12px;
+				background: #0891b2;
+				color: white;
+				font-weight: 600;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+			}
+
+			.btn:hover {
+				background: #0e7490;
+			}
+
+			/* ICON SIZE GLOBAL */
+			[data-lucide] {
+				width: 18px;
+				height: 18px;
+				flex-shrink: 0;
+			}
+		</style>
+	</head>
+
+	<body class="min-h-screen">
+		<div class="max-w-7xl mx-auto p-5">
+			<!-- HEADER -->
+			<header class="glass p-5 rounded-3xl shadow mb-6 flex justify-between items-center">
+				<div>
+					<h1 class="text-2xl font-bold text-cyan-700 flex items-center gap-2">
+						<i data-lucide="fish"></i>
+						Smart Fish Feeder V1
+					</h1>
+
+					<p class="text-gray-500">IoT Aquaculture Monitoring</p>
+				</div>
+				<span class="flex items-center gap-2 text-sm">
+					<span class="text-gray-600 font-medium">MQTT:</span>
+
+					<span class="mqtt-status bg-red-100 text-red-700 px-3 py-1 rounded-full border border-red-200 flex items-center gap-2"> ● Offline </span>
+				</span>
+			</header>
+
+			<!-- SENSOR -->
+			<section class="grid md:grid-cols-3 gap-5 mb-6">
+				<!-- PH -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<div class="flex items-center gap-2 text-cyan-700">
+						<i data-lucide="droplets"></i>
+						<h2>Water pH</h2>
+					</div>
+
+					<h1
+						id="phValue"
+						class="text-6xl text-center font-bold text-cyan-600 my-6">
+						-
+					</h1>
+
+					<p class="text-center">
+						<span class="bg-green-100 text-green-700 px-4 py-2 rounded-full"> Normal </span>
+					</p>
+				</div>
+
+				<!-- DEVICE -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<h2 class="text-cyan-700 flex items-center gap-2">
+						<i data-lucide="cpu"></i>
+						Device
+					</h2>
+
+					<div class="mt-5 space-y-2 text-sm">
+						<p>Device : FEEDER-001</p>
+						<p>Status : Online</p>
+						<p>Next feeding: --:--:--</p>
+					</div>
+				</div>
+
+				<!-- FEED -->
+
+				<div class="glass p-6 rounded-3xl shadow">
+					<h2 class="text-cyan-700 flex items-center gap-2">
+						<i data-lucide="fish"></i>
+						Feeding Control
+					</h2>
+
+					<!-- INPUT JUMLAH PAKAN -->
+					<div class="mt-4 space-y-3">
+						<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+							<i data-lucide="scale"></i>
+
+							<input
+								id="feedAmount"
+								type="number"
+								min="1"
+								placeholder="Jumlah pakan (gram)"
+								class="w-full outline-none" />
+						</div>
+
+						<!-- BUTTON FEED -->
+						<button
+							onclick="feedNow()"
+							class="btn">
+							<i data-lucide="play-circle"></i>
+							FEED NOW
+						</button>
+					</div>
+				</div>
+			</section>
+
+			<!-- CHART -->
+			<div class="glass p-6 rounded-3xl shadow mb-6">
+				<h2 class="text-cyan-700 mb-4 flex items-center gap-2">
+					<i data-lucide="activity"></i>
+					Realtime pH
+				</h2>
+
+				<canvas id="chart"></canvas>
+			</div>
+
+			<!-- FORM -->
+			<section class="grid md:grid-cols-2 gap-5">
+				<!-- FEEDING SCHEDULE -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<!-- HEADER -->
+					<h2 class="text-cyan-700 flex items-center gap-2 mb-4">
+						<i data-lucide="clock"></i>
+						Feeding Schedule
+					</h2>
+
+					<!-- TIME INPUT -->
+					<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-3">
+						<i data-lucide="clock"></i>
+						<input
+							type="time"
+							class="w-full outline-none" />
+					</div>
+
+					<!-- AMOUNT INPUT -->
+					<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-4">
+						<i data-lucide="scale"></i>
+						<input
+							type="number"
+							class="w-full outline-none"
+							placeholder="Jumlah pakan (gram)" />
+					</div>
+
+					<!-- SAVE BUTTON -->
+					<button class="btn flex items-center justify-center gap-2">
+						<i data-lucide="save"></i>
+						Save Schedule
+					</button>
+				</div>
+				<!-- MQTT -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<h2 class="text-cyan-700 mb-4 flex items-center gap-2">
+						<i data-lucide="settings"></i>
+						MQTT Config
+					</h2>
+
+					<!-- GRID 2-2-1 -->
+					<div class="space-y-3">
+						<!-- ROW 1 (2 kolom) -->
+						<div class="grid grid-cols-2 gap-3">
+							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+								<i data-lucide="server"></i>
+								<input
+									class="w-full outline-none"
+									placeholder="Broker" />
+							</div>
+
+							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+								<i data-lucide="plug"></i>
+								<input
+									class="w-full outline-none"
+									placeholder="Port" />
+							</div>
+						</div>
+
+						<!-- ROW 2 (2 kolom) -->
+						<div class="grid grid-cols-2 gap-3">
+							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+								<i data-lucide="droplets"></i>
+								<input
+									class="w-full outline-none"
+									placeholder="Topic Sensor" />
+							</div>
+
+							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+								<i data-lucide="fish"></i>
+								<input
+									class="w-full outline-none"
+									placeholder="Topic Feeding" />
+							</div>
+						</div>
+
+						<!-- ROW 3  -->
+						<div class="grid grid-cols-2 gap-3">
+							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+								<i data-lucide="wifi"></i>
+								<input
+									class="w-full outline-none"
+									placeholder="Topic Status" />
+							</div>
+						</div>
+
+						<!-- SAVE BUTTON -->
+						<button class="btn flex items-center justify-center gap-2">
+							<i data-lucide="save"></i>
+							Save MQTT
+						</button>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<script src="app.js"></script>
+	</body>
+</html>
