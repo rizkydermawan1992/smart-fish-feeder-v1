@@ -50,8 +50,8 @@
 
 			/* ICON SIZE GLOBAL */
 			[data-lucide] {
-				width: 18px;
-				height: 18px;
+				width: 20px;
+				height: 20px;
 				flex-shrink: 0;
 			}
 		</style>
@@ -60,58 +60,113 @@
 	<body class="min-h-screen">
 		<div class="max-w-7xl mx-auto p-5">
 			<!-- HEADER -->
-			<header class="glass p-5 rounded-3xl shadow mb-6 flex justify-between items-center">
-				<div>
-					<h1 class="text-2xl font-bold text-cyan-700 flex items-center gap-2">
-						<i data-lucide="fish"></i>
-						Smart Fish Feeder V1
-					</h1>
+			<header class="glass p-5 rounded-3xl shadow mb-6 flex flex-col md:flex-row justify-between gap-4">
+				<div class="flex items-center gap-4">
+					<!-- LOGO -->
+					<div class="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center overflow-hidden">
+						<img
+							src="assets/logo.png"
+							alt="Smart Fish Feeder Logo"
+							class="w-full h-full object-contain" />
+					</div>
 
-					<p class="text-gray-500">IoT Aquaculture Monitoring</p>
+					<!-- TITLE -->
+					<div>
+						<h1 class="text-2xl font-bold text-cyan-700 flex items-center gap-2">
+							<i data-lucide="fish"></i>
+							Smart Fish Feeder V1
+						</h1>
+						<p class="text-gray-500">IoT Aquaculture Monitoring</p>
+					</div>
 				</div>
-				<span class="flex items-center gap-2 text-sm">
-					<span class="text-gray-600 font-medium">MQTT:</span>
 
-					<span class="mqtt-status bg-red-100 text-red-700 px-3 py-1 rounded-full border border-red-200 flex items-center gap-2"> ● Offline </span>
-				</span>
+				<!-- STATUS GROUP -->
+				<div class="flex flex-wrap items-center gap-3">
+					<!-- MQTT -->
+					<div class="flex items-center gap-2 text-sm">
+						<span class="text-gray-600 font-medium"> MQTT: </span>
+						<span
+							id="mqttStatus"
+							class="bg-red-100 text-red-700 px-3 py-1 rounded-full border border-red-200">
+							● Disconnected
+						</span>
+					</div>
+
+					<!-- ESP32 -->
+					<div class="flex items-center gap-2 text-sm">
+						<span class="text-gray-600 font-medium"> ESP32: </span>
+
+						<span
+							id="espStatus"
+							class="bg-red-100 text-red-700 px-3 py-1 rounded-full border border-red-200">
+							● Offline
+						</span>
+					</div>
+				</div>
 			</header>
 
 			<!-- SENSOR -->
-			<section class="grid md:grid-cols-3 gap-5 mb-6">
+			<section class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
 				<!-- PH -->
 				<div class="glass p-6 rounded-3xl shadow">
-					<div class="flex items-center gap-2 text-cyan-700">
-						<i data-lucide="droplets"></i>
-						<h2>Water pH</h2>
-					</div>
+					<div class="flex flex-col md:flex-row gap-6">
+						<!-- LEFT : NILAI PH -->
+						<div class="md:w-1/2 flex flex-col items-center justify-center md:border-r md:border-gray-200">
+							<!-- HEADER -->
+							<div class="flex items-center gap-2 text-cyan-700 mb-3">
+								<i data-lucide="droplets"></i>
 
-					<h1
-						id="phValue"
-						class="text-6xl text-center font-bold text-cyan-600 my-6">
-						-
-					</h1>
+								<h2 class="font-semibold text-base md:text-lg">Water pH</h2>
+							</div>
 
-					<p class="text-center">
-						<span class="bg-green-100 text-green-700 px-4 py-2 rounded-full"> Normal </span>
-					</p>
-				</div>
+							<!-- VALUE -->
+							<h1
+								id="phValue"
+								class="text-5xl md:text-6xl font-bold text-cyan-600">
+								-
+							</h1>
 
-				<!-- DEVICE -->
-				<div class="glass p-6 rounded-3xl shadow">
-					<h2 class="text-cyan-700 flex items-center gap-2">
-						<i data-lucide="cpu"></i>
-						Device
-					</h2>
+							<!-- STATUS -->
+							<div class="mt-5">
+								<span
+									id="phStatus"
+									class="bg-green-100 text-green-700 px-5 py-2 rounded-full text-sm md:text-base font-semibold flex items-center gap-2">
+									<i data-lucide="circle-check"></i>
 
-					<div class="mt-5 space-y-2 text-sm">
-						<p>Device : FEEDER-001</p>
-						<p>Status : Online</p>
-						<p>Next feeding: --:--:--</p>
+									Normal
+								</span>
+							</div>
+						</div>
+
+						<!-- RIGHT : KLASIFIKASI -->
+						<div class="md:w-1/2 bg-white/70 rounded-2xl p-4">
+							<div class="space-y-2 text-sm">
+								<!-- ASAM -->
+								<div class="flex justify-between items-center bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+									<span> pH < 6.5 </span>
+
+									<span class="text-red-600 font-semibold"> Asam </span>
+								</div>
+
+								<!-- NORMAL -->
+								<div class="flex justify-between items-center bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+									<span> 6.5 - 8.5 </span>
+
+									<span class="text-green-600 font-semibold"> Normal </span>
+								</div>
+
+								<!-- BASA -->
+								<div class="flex justify-between items-center bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+									<span> pH > 8.5 </span>
+
+									<span class="text-orange-600 font-semibold"> Basa </span>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 
 				<!-- FEED -->
-
 				<div class="glass p-6 rounded-3xl shadow">
 					<h2 class="text-cyan-700 flex items-center gap-2">
 						<i data-lucide="fish"></i>
@@ -140,51 +195,49 @@
 						</button>
 					</div>
 				</div>
-			</section>
 
-			<!-- CHART -->
-			<div class="glass p-6 rounded-3xl shadow mb-6">
-				<h2 class="text-cyan-700 mb-4 flex items-center gap-2">
-					<i data-lucide="activity"></i>
-					Realtime pH
-				</h2>
-
-				<canvas id="chart"></canvas>
-			</div>
-
-			<!-- FORM -->
-			<section class="grid md:grid-cols-2 gap-5">
 				<!-- FEEDING SCHEDULE -->
 				<div class="glass p-6 rounded-3xl shadow">
-					<!-- HEADER -->
 					<h2 class="text-cyan-700 flex items-center gap-2 mb-4">
 						<i data-lucide="clock"></i>
 						Feeding Schedule
 					</h2>
-
-					<!-- TIME INPUT -->
-					<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-3">
-						<i data-lucide="clock"></i>
-						<input
-							type="time"
-							class="w-full outline-none" />
+					<div class="grid grid-cols-2 gap-3">
+						<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-3">
+							<i data-lucide="clock"></i>
+							<input
+								id="feedTime"
+								type="time"
+								class="w-full outline-none" />
+						</div>
+						<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-4">
+							<i data-lucide="scale"></i>
+							<input
+								id="scheduleAmount"
+								type="number"
+								class="w-full outline-none"
+								placeholder="Jumlah pakan (gram)" />
+						</div>
 					</div>
-
-					<!-- AMOUNT INPUT -->
-					<div class="flex items-center gap-3 border rounded-xl p-3 bg-white mb-4">
-						<i data-lucide="scale"></i>
-						<input
-							type="number"
-							class="w-full outline-none"
-							placeholder="Jumlah pakan (gram)" />
-					</div>
-
-					<!-- SAVE BUTTON -->
 					<button class="btn flex items-center justify-center gap-2">
 						<i data-lucide="save"></i>
 						Save Schedule
 					</button>
 				</div>
+			</section>
+
+			<section class="grid md:grid-cols-2 gap-5">
+				<!-- CHART -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<h2 class="text-cyan-700 mb-4 flex items-center gap-2">
+						<i data-lucide="activity"></i>
+						Realtime pH
+					</h2>
+					<div class="h-72">
+						<canvas id="chart"></canvas>
+					</div>
+				</div>
+
 				<!-- MQTT -->
 				<div class="glass p-6 rounded-3xl shadow">
 					<h2 class="text-cyan-700 mb-4 flex items-center gap-2">
@@ -192,60 +245,68 @@
 						MQTT Config
 					</h2>
 
-					<!-- GRID 2-2-1 -->
+					<!-- FORM VERTICAL -->
 					<div class="space-y-3">
-						<!-- ROW 1 (2 kolom) -->
-						<div class="grid grid-cols-2 gap-3">
-							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
-								<i data-lucide="server"></i>
-								<input
-									class="w-full outline-none"
-									placeholder="Broker" />
-							</div>
-
-							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
-								<i data-lucide="plug"></i>
-								<input
-									class="w-full outline-none"
-									placeholder="Port" />
-							</div>
+						<!-- BROKER -->
+						<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+							<i data-lucide="server"></i>
+							<input
+								id="mqttBroker"
+								class="w-full outline-none"
+								placeholder="Broker" />
 						</div>
 
-						<!-- ROW 2 (2 kolom) -->
-						<div class="grid grid-cols-2 gap-3">
-							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
-								<i data-lucide="droplets"></i>
-								<input
-									class="w-full outline-none"
-									placeholder="Topic Sensor" />
-							</div>
-
-							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
-								<i data-lucide="fish"></i>
-								<input
-									class="w-full outline-none"
-									placeholder="Topic Feeding" />
-							</div>
+						<!-- PORT -->
+						<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+							<i data-lucide="plug"></i>
+							<input
+								id="mqttPort"
+								class="w-full outline-none"
+								placeholder="Port" />
 						</div>
 
-						<!-- ROW 3  -->
-						<div class="grid grid-cols-2 gap-3">
-							<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
-								<i data-lucide="wifi"></i>
-								<input
-									class="w-full outline-none"
-									placeholder="Topic Status" />
-							</div>
+						<!-- TOPIC SENSOR -->
+						<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+							<i data-lucide="droplets"></i>
+							<input
+								id="sensorTopic"
+								class="w-full outline-none"
+								placeholder="Topic Sensor" />
+						</div>
+
+						<!-- TOPIC STATUS -->
+						<div class="flex items-center gap-2 border rounded-xl p-3 bg-white">
+							<i data-lucide="wifi"></i>
+							<input
+								id="statusTopic"
+								class="w-full outline-none"
+								placeholder="Topic Status" />
 						</div>
 
 						<!-- SAVE BUTTON -->
-						<button class="btn flex items-center justify-center gap-2">
+						<button
+							onclick="saveMqttConfig()"
+							class="btn flex items-center justify-center gap-2">
 							<i data-lucide="save"></i>
 							Save MQTT
 						</button>
 					</div>
 				</div>
 			</section>
+
+			<section class="grid md:grid-cols-2 gap-5"></section>
+
+			<!-- FOOTER -->
+			<footer class="glass mt-6 p-4 rounded-3xl shadow">
+				<div class="flex flex-col md:flex-row justify-between items-center gap-3 text-sm text-gray-600">
+					<div class="flex items-center gap-2">
+						<i data-lucide="fish"></i>
+						<span> Smart Fish Feeder V1 </span>
+					</div>
+					<div>IoT Aquaculture Monitoring System</div>
+					<div class="text-center">© 2026 Rizky Project</div>
+				</div>
+			</footer>
 		</div>
 
 		<script src="app.js"></script>

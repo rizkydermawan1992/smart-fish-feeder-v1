@@ -40,9 +40,7 @@ function startDummy() {
     setInterval(() => {
 
         // if (mqttConnected) return; // STOP jika MQTT aktif
-
-        const ph = +(6.8 + Math.random() * 1.4).toFixed(2);
-
+        const ph = +(6.0 + Math.random() * 2.4).toFixed(2);
         updatePH(ph);
 
     }, 3000);
@@ -50,14 +48,52 @@ function startDummy() {
 
 // ================= UPDATE FUNCTION =================
 function updatePH(ph) {
-    document.getElementById("phValue").innerHTML = ph.toFixed(2);
 
-    chart.data.labels.push(new Date().toLocaleTimeString());
+    // update nilai
+    document.getElementById("phValue").innerHTML = ph.toFixed(2);
+    // update status pH
+    const status = document.getElementById("phStatus");
+
+
+    if (ph < 6.5) {
+        status.innerHTML = `
+            <i data-lucide="triangle-alert"></i>
+            Asam
+        `;
+        status.className =
+            "bg-red-100 text-red-700 px-5 py-2 rounded-full text-sm md:text-base font-semibold flex items-center gap-2";
+    }
+    else if (ph <= 8.5) {
+        status.innerHTML = `
+            <i data-lucide="circle-check"></i>
+            Normal
+        `;
+        status.className =
+            "bg-green-100 text-green-700 px-5 py-2 rounded-full text-sm md:text-base font-semibold flex items-center gap-2";
+    }
+    else {
+        status.innerHTML = `
+            <i data-lucide="triangle-alert"></i>
+            Basa
+        `;
+        status.className =
+            "bg-orange-100 text-orange-700 px-5 py-2 rounded-full text-sm md:text-base font-semibold flex items-center gap-2";
+
+    }
+
+    lucide.createIcons();
+
+    // update chart
+    chart.data.labels.push(
+        new Date().toLocaleTimeString()
+    );
+
     chart.data.datasets[0].data.push(ph);
 
     if (chart.data.labels.length > 15) {
         chart.data.labels.shift();
         chart.data.datasets[0].data.shift();
+
     }
 
     chart.update();
@@ -69,16 +105,21 @@ startDummy();
 
 // ================= FEED COMMAND =================
 function feedNow() {
-    const amount = document.querySelector("#feedAmount")?.value || 0;
 
+    if (!mqttConnected) {
+        alert("MQTT belum terkoneksi");
+        return;
+    }
+
+    const amount = document.getElementById("feedAmount").value;
     const payload = JSON.stringify({
         command: "feed",
-        amount: parseInt(amount),
+        amount: Number(amount),
         timestamp: new Date().toISOString()
     });
 
     client.publish(MQTT_CONFIG.topicFeed, payload);
-    console.log("Published:", payload);
+    console.log(payload);
 }
 
 
@@ -102,10 +143,8 @@ const client = mqtt.connect(MQTT_CONFIG.url, {
 });
 
 
-// ================= MQTT EVENTS =================
 client.on("connect", () => {
     console.log("MQTT Connected");
-
     mqttConnected = true;
 
     client.subscribe([
@@ -113,14 +152,22 @@ client.on("connect", () => {
         MQTT_CONFIG.topicStatus
     ]);
 
-    const el = document.querySelector(".mqtt-status");
+    const el = document.getElementById("mqttStatus");
+
     if (el) {
-        el.innerHTML = "● Online";
-        el.classList.remove("text-red-600");
-        el.classList.add("text-green-600");
-        el.classList.remove("bg-red-100");
-        el.classList.add("bg-green-100");
+        el.innerHTML = "● Connected";
+        el.classList.remove(
+            "text-red-700",
+            "bg-red-100",
+            "border-red-200"
+        );
+        el.classList.add(
+            "text-green-700",
+            "bg-green-100",
+            "border-green-200"
+        );
     }
+
 });
 
 client.on("disconnect", () => {
@@ -128,11 +175,25 @@ client.on("disconnect", () => {
 });
 
 client.on("message", (topic, message) => {
-
     const data = message.toString();
 
+    // ================= PH SENSOR =================
     if (topic === MQTT_CONFIG.topicPh) {
         const ph = parseFloat(data);
         updatePH(ph);
     }
+
+    // ================= ESP32 STATUS =================
+    if (topic === MQTT_CONFIG.topicStatus) {
+        const espStatus = document.getElementById("espStatus");
+        espStatus.innerHTML = "● Online";
+        espStatus.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full border border-green-200";
+
+        console.log("ESP32 Status:", data);
+    }
 });
+
+function saveMqttConfig() {
+    let broker = document.getElementById("mqttBroker").value;
+    console.log(broker);
+}
