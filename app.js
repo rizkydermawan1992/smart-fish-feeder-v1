@@ -115,14 +115,20 @@ function feedNow() {
     }
 
     const amount = document.getElementById("feedAmount").value;
+
+    if (amount === "" || amount <= 0) {
+        alert("Jumlah pakan tidak valid");
+        return;
+    }
+
     const payload = JSON.stringify({
-        command: "feed",
+        mode: "manual",
         amount: Number(amount),
-        timestamp: new Date().toISOString()
     });
 
-    client.publish(MQTT_CONFIG.topicFeed, payload);
+    client.publish(MQTT_CONFIG.topicSensor, payload);
     console.log(payload);
+    alert("Perintah pemberian pakan berhasil dikirim\nJumlah: "+ amount + " gram");
 }
 
 
@@ -205,16 +211,24 @@ function connectMQTT() {
         const data = message.toString();
         // PH SENSOR
         if (topic === MQTT_CONFIG.topicSensor) {
-            const ph = parseFloat(data);
+            const sensorData = JSON.parse(data);
+            const ph = sensorData.ph;
             updatePH(ph);
         }
         // ESP32 STATUS
         if (topic === MQTT_CONFIG.topicStatus) {
             const espStatus = document.getElementById("espStatus");
-            espStatus.innerHTML = "● Online";
-            espStatus.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full border border-green-200";
+            const statusData = JSON.parse(data);
+            const esp32Status = statusData.status;
+            if (esp32Status == "online") {
+                espStatus.innerHTML = "● Online";
+                espStatus.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full border border-green-200";
+            } else {
+                espStatus.innerHTML = "● Offline";
+                espStatus.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full border border-green-200";
+            }
 
-            console.log("ESP32 Status:", data);
+            console.log("ESP32 Status:", esp32Status);
         }
     });
 }
@@ -257,6 +271,5 @@ async function saveMqttConfig() {
 }
 
 // start dummy
-startDummy();
-
+// startDummy();
 loadMQTTConfig();
