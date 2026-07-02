@@ -7,7 +7,7 @@ const buttonStyle = "bg-cyan-600 text-white p-3 rounded-xl w-full";
 
 // Endpoint API
 const FEEDING_LOG_API = "https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook/cfa640b4-a9a6-4ac4-9a13-62d9ab30e2e3";
-const FEEDING_SCHEDULE_API = "https://...../webhook/feeding-schedule";
+const FEEDING_SCHEDULE_API = "https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook/198c12d3-e46a-4b9d-88c8-026a6d8df663";
 
 const ROWS_PER_PAGE = 5;
 
@@ -195,7 +195,7 @@ function renderFeedingLog() {
 
     const tbody = document.getElementById("feedingLogBody");
 
- 
+
 
     const start = (feedingLogPage - 1) * ROWS_PER_PAGE;
     const end = start + ROWS_PER_PAGE;
@@ -270,17 +270,151 @@ async function loadFeedingLog() {
 
         feedingLogData = data;
         feedingLogPage = 1;
-
         renderFeedingLog();
 
     }
     catch (err) {
-
         console.error(err);
+    }
+}
+
+// ================= FEEDING SCHEDULE ========================
+function changeSchedulePage(page) {
+
+    const totalPages =
+        Math.ceil(
+            feedingScheduleData.length /
+            ROWS_PER_PAGE
+        );
+
+    if (page < 1) return;
+
+    if (page > totalPages) return;
+
+    feedingSchedulePage = page;
+    renderFeedingSchedule();
+
+}
+
+function renderSchedulePagination() {
+
+    const totalPages =
+        Math.ceil(
+            feedingScheduleData.length /
+            ROWS_PER_PAGE
+        );
+
+    const div =
+        document.getElementById(
+            "feedingSchedulePagination"
+        );
+
+    div.innerHTML = "";
+
+    if (totalPages <= 1) return;
+
+    div.innerHTML += `
+    <button
+    onclick="changeSchedulePage(${feedingSchedulePage - 1})"
+    ${feedingSchedulePage == 1 ? "disabled" : ""}
+    class="px-3 py-1 border rounded">
+
+    Prev
+
+    </button>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+
+        div.innerHTML += `
+
+        <button
+
+        onclick="changeSchedulePage(${i})"
+
+        class="px-3 py-1 rounded
+        ${i == feedingSchedulePage ? "bg-cyan-600 text-white" : "border"}">
+
+        ${i}
+
+        </button>
+
+        `;
 
     }
 
+    div.innerHTML += `
+    <button
+    onclick="changeSchedulePage(${feedingSchedulePage + 1})"
+    ${feedingSchedulePage == totalPages ? "disabled" : ""}
+    class="px-3 py-1 border rounded">
+
+    Next
+
+    </button>
+    `;
+
 }
+
+function renderFeedingSchedule() {
+
+    const tbody = document.getElementById("feedingScheduleBody");
+    const start = (feedingSchedulePage - 1) * ROWS_PER_PAGE;
+    const end = start + ROWS_PER_PAGE;
+
+    const pageData = feedingLogData.slice(start, end);
+    let html = "";
+    let no = start + 1;
+
+    pageData.forEach(item => {
+
+        html += `
+                <tr class="border-b">
+
+            <td class="text-center">${no++}</td>
+
+            <td class="text-center py-2">
+                ${item.feeding_time}
+            </td>
+
+            <td class="text-center">
+                ${item.amount} g
+            </td>
+
+        </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    renderSchedulePagination();
+
+}
+
+async function loadFeedingSchedule() {
+    try {
+
+        const response = await fetch(FEEDING_SCHEDULE_API, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("Gagal mengambil data feeding schedule");
+        }
+
+        const data = await response.json();
+
+        feedingScheduleData = data;
+        feedingSchedulePage = 1;
+        renderFeedingSchedule();
+
+    }
+    catch (err) {
+        console.error(err);
+    }
+
+
+}
+
 
 
 // ================= MQTT CONFIG =================
@@ -479,4 +613,8 @@ function saveSchedule() {
 // start dummy
 // startDummy();
 loadMQTTConfig();
-loadFeedingLog();
+
+setInterval(() => {
+    loadFeedingLog();
+    loadFeedingSchedule();
+}, 2000);
