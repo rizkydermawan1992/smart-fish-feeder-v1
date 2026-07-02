@@ -5,6 +5,21 @@ document.addEventListener("DOMContentLoaded", () => {
 const inputStyle = "border rounded-xl p-3 w-full";
 const buttonStyle = "bg-cyan-600 text-white p-3 rounded-xl w-full";
 
+// Endpoint API
+const FEEDING_LOG_API = "https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook/cfa640b4-a9a6-4ac4-9a13-62d9ab30e2e3";
+const FEEDING_SCHEDULE_API = "https://...../webhook/feeding-schedule";
+
+const ROWS_PER_PAGE = 5;
+
+// Feeding Log
+let feedingLogData = [];
+let feedingLogPage = 1;
+
+// Feeding Schedule
+let feedingScheduleData = [];
+let feedingSchedulePage = 1;
+
+
 // ===== MODE CONTROL =====
 let USE_DUMMY_PH = true;
 let mqttConnected = false;
@@ -104,8 +119,6 @@ function updatePH(ph) {
 }
 
 
-
-
 // ================= FEED COMMAND =================
 function feedNow() {
 
@@ -128,13 +141,151 @@ function feedNow() {
 
     client.publish(MQTT_CONFIG.topicSensor, payload);
     console.log(payload);
-    alert("Perintah pemberian pakan berhasil dikirim\nJumlah: "+ amount + " gram");
+    alert("Perintah pemberian pakan berhasil dikirim\nJumlah: " + amount + " gram");
+    // Kosongkan form
+    document.getElementById("feedAmount").value = "";
+}
+
+// ================ FEEDING LOG ==================
+function renderLogPagination() {
+
+    const totalPages = Math.ceil(feedingLogData.length / ROWS_PER_PAGE);
+    const div = document.getElementById("feedingLogPagination");
+
+    div.innerHTML = "";
+
+    if (totalPages <= 1) return;
+
+    div.innerHTML += `
+    <button
+        onclick="changeLogPage(${feedingLogPage - 1})"
+        ${feedingLogPage == 1 ? "disabled" : ""}
+        class="px-3 py-1 border rounded">
+        Prev
+    </button>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+
+        div.innerHTML += `
+        <button
+            onclick="changeLogPage(${i})"
+            class="px-3 py-1 rounded
+            ${i == feedingLogPage ? "bg-cyan-600 text-white" : "border"}">
+
+            ${i}
+
+        </button>
+        `;
+
+    }
+
+    div.innerHTML += `
+    <button
+        onclick="changeLogPage(${feedingLogPage + 1})"
+        ${feedingLogPage == totalPages ? "disabled" : ""}
+        class="px-3 py-1 border rounded">
+        Next
+    </button>
+    `;
+
+}
+
+function renderFeedingLog() {
+
+    const tbody = document.getElementById("feedingLogBody");
+
+ 
+
+    const start = (feedingLogPage - 1) * ROWS_PER_PAGE;
+    const end = start + ROWS_PER_PAGE;
+
+    const pageData = feedingLogData.slice(start, end);
+    let html = "";
+    let no = start + 1;
+
+    pageData.forEach(item => {
+
+        html += `
+                <tr class="border-b">
+
+                    <td class="text-center">
+                        ${no++}
+                    </td>
+
+                    <td class="text-center py-2">
+                        ${item.feeding_time}
+                    </td>
+
+                    <td class="text-center">
+                        ${item.data_mode}
+                    </td>
+
+                    <td class="text-center">
+                        ${item.amount} g
+                    </td>
+
+                    <td class="text-center">
+                        ${item.ph}
+                    </td>
+
+                </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    renderLogPagination();
+
+}
+
+function changeLogPage(page) {
+
+    const totalPages = Math.ceil(feedingLogData.length / ROWS_PER_PAGE);
+
+    if (page < 1) return;
+
+    if (page > totalPages) return;
+
+    feedingLogPage = page;
+
+    renderFeedingLog();
+
+}
+
+
+
+async function loadFeedingLog() {
+
+    try {
+
+        const response = await fetch(FEEDING_LOG_API, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("Gagal mengambil data feeding log");
+        }
+
+        const data = await response.json();
+
+        feedingLogData = data;
+        feedingLogPage = 1;
+
+        renderFeedingLog();
+
+    }
+    catch (err) {
+
+        console.error(err);
+
+    }
+
 }
 
 
 // ================= MQTT CONFIG =================
 const MQTT_CONFIG_API = "https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook/9a1aef5e-bc89-4204-950f-53fd634c20e5";
-//const MQTT_CONFIG_API = "https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook-test/9a1aef5e-bc89-4204-950f-53fd634c20e5"
+
 
 async function loadMQTTConfig() {
     try {
@@ -208,18 +359,27 @@ function connectMQTT() {
 
     // MESSAGE
     client.on("message", (topic, message) => {
-        const data = message.toString();
-        // PH SENSOR
+
+        const data = JSON.parse(message.toString());
         if (topic === MQTT_CONFIG.topicSensor) {
-            const sensorData = JSON.parse(data);
-            const ph = sensorData.ph;
-            updatePH(ph);
+            // Data sensor
+            if (data.mode === "sensor") {
+                updatePH(data.ph);
+                return;
+            }
+
+            // Perintah feeder
+            if (data.mode === "manual") {
+                console.log("Perintah pakan:", data.amount);
+                return;
+            }
+
         }
+
         // ESP32 STATUS
         if (topic === MQTT_CONFIG.topicStatus) {
             const espStatus = document.getElementById("espStatus");
-            const statusData = JSON.parse(data);
-            const esp32Status = statusData.status;
+            const esp32Status = data.status;
             if (esp32Status == "online") {
                 espStatus.innerHTML = "● Online";
                 espStatus.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full border border-green-200";
@@ -261,7 +421,7 @@ async function saveMqttConfig() {
         const result = await response.json();
 
         console.log("Response API:", result);
-        alert("MQTT Config berhasil disimpan");
+        alert("Data Konfigurasi MQTT Berhasil Disimpan!");
     }
 
     catch (error) {
@@ -270,6 +430,53 @@ async function saveMqttConfig() {
     }
 }
 
+function saveSchedule() {
+
+    const feedTime = document.getElementById("feedTime").value;
+    const amount = document.getElementById("scheduleAmount").value;
+
+    // Validasi
+    if (feedTime === "" || amount === "") {
+        alert("Jam dan jumlah pakan harus diisi");
+        return;
+    }
+
+    const payload = {
+        feeding_time: feedTime,
+        amount: Number(amount)
+    };
+
+    fetch("https://n8n-35yaee339qxb.jkt6.sumopod.my.id/webhook/35b13c17-d80d-4f82-b732-a21ea11ad191", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Gagal mengirim data");
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Response:", data.message);
+
+            // Tampilkan pesan dari server
+            alert(data.message);
+
+            // Kosongkan form
+            document.getElementById("feedTime").value = "";
+            document.getElementById("scheduleAmount").value = "";
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Terjadi kesalahan saat menyimpan jadwal.");
+        });
+
+}
+
 // start dummy
 // startDummy();
 loadMQTTConfig();
+loadFeedingLog();

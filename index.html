@@ -6,7 +6,7 @@
 			name="viewport"
 			content="width=device-width,initial-scale=1.0" />
 
-		<title>Smart Fish Feeder</title>
+		<title>Smart Fish Feeder V1</title>
 
 		<script src="https://cdn.tailwindcss.com"></script>
 		<script src="https://unpkg.com/lucide@latest"></script>
@@ -219,7 +219,10 @@
 								placeholder="Jumlah pakan (gram)" />
 						</div>
 					</div>
-					<button class="btn flex items-center justify-center gap-2">
+					<button
+						id="saveSchedule"
+						class="btn flex items-center justify-center gap-2"
+						onclick="saveSchedule()">
 						<i data-lucide="save"></i>
 						Save Schedule
 					</button>
@@ -294,7 +297,63 @@
 				</div>
 			</section>
 
-			<section class="grid md:grid-cols-2 gap-5"></section>
+			<section class="grid md:grid-cols-2 gap-5 mt-6">
+				<!-- FEEDING LOG -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<div class="flex justify-between items-center mb-4">
+						<h2 class="text-cyan-700 flex items-center gap-2">
+							<i data-lucide="history"></i>
+							Feeding Log
+						</h2>
+					</div>
+
+					<div class="overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="border-b">
+								<tr>
+									<th class="text-center py-2">No.</th>
+									<th class="text-center py-2">Time</th>
+									<th class="text-center py-2">Mode</th>
+									<th class="text-center py-2">Amount</th>
+									<th class="text-center py-2">pH</th>
+								</tr>
+							</thead>
+
+							<tbody id="feedingLogBody"></tbody>
+						</table>
+					</div>
+					<div
+						id="feedingLogPagination"
+						class="flex justify-center items-center gap-2 mt-4"></div>
+				</div>
+
+				<!-- FEEDING SCHEDULE -->
+				<div class="glass p-6 rounded-3xl shadow">
+					<div class="flex justify-between items-center mb-4">
+						<h2 class="text-cyan-700 flex items-center gap-2">
+							<i data-lucide="calendar-clock"></i>
+							Feeding Schedule
+						</h2>
+					</div>
+
+					<div class="overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="border-b">
+								<tr>
+									<th>ID</th>
+									<th>Time</th>
+									<th>Amount</th>
+								</tr>
+							</thead>
+
+							<tbody id="feedingScheduleBody"></tbody>
+						</table>
+					</div>
+					<div
+						id="feedingSchedulePagination"
+						class="flex justify-center items-center gap-2 mt-4"></div>
+				</div>
+			</section>
 
 			<!-- FOOTER -->
 			<footer class="glass mt-6 p-4 rounded-3xl shadow">
